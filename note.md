@@ -110,4 +110,9 @@ GlobalException.java和GlobalExceptionHandler.java配合@RestControllerAdvice注
    将用户信息存入session
 
 4. 登陆拦截器
+
+   入参的时候判断：HandlerMethodArgumentResolver
+
+   拦截器：intercepter
+
 5. 跨域
