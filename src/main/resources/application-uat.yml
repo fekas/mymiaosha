@@ -1,13 +1,11 @@
 spring:
-  profiles:
-    active:
   # thymelaef配置
   thymeleaf:
     cache: false
   # 数据源配置
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://120.27.149.243:3306/miaosha?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
+    url: jdbc:mysql://localhost:3306/miaosha?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
     username: root
     password: Zl.mtcldys606910
     hikari:
@@ -30,7 +28,7 @@ spring:
 
 
   redis:
-    host: 120.27.149.243
+    host: localhost
     port: 63796
     #操作的数据库
     database: 0
@@ -48,6 +46,8 @@ spring:
         #最小空闲连接时间，默认0
         min-idle: 5
 
+server:
+  port: 8899
 
 #mybatis-plus 配置
 mybatis-plus:
