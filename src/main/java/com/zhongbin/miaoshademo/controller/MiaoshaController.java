@@ -11,6 +11,7 @@ import com.zhongbin.miaoshademo.vo.GoodsVo;
 import com.zhongbin.miaoshademo.vo.RespBean;
 import com.zhongbin.miaoshademo.vo.RespBeanEnum;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -27,10 +28,13 @@ public class MiaoshaController {
     private IMiaoshaOrderService miaoshaOrderService;
     @Autowired
     private IOrderService orderService;
+    @Autowired
+    private RedisTemplate redisTemplate;
 
     /**
      * mac优化前QPS：109
      * centOS优化前：853.3
+     * centOS优化后: 988
      * @param model
      * @param user
      * @param goodsId
@@ -46,7 +50,10 @@ public class MiaoshaController {
             model.addAttribute("errmsg", RespBeanEnum.ENPTY_STOCK.getMessage());
             return "miaoshaFail";
         }
-        MiaoshaOrder miaoshaOrder = miaoshaOrderService.getOne(new QueryWrapper<MiaoshaOrder>().eq("user_id", user.getId()).eq("goods_id", goodsId));
+
+        //在秒杀订单表建立user_id和goods_id的唯一索引也可以防止重复购买
+        //MiaoshaOrder miaoshaOrder = miaoshaOrderService.getOne(new QueryWrapper<MiaoshaOrder>().eq("user_id", user.getId()).eq("goods_id", goodsId));
+        MiaoshaOrder miaoshaOrder = ((MiaoshaOrder) redisTemplate.opsForValue().get("order:" + user.getId() + ":" + goodsVo.getId()));
         if(miaoshaOrder != null){
             model.addAttribute("errmsg", RespBeanEnum.REPEATE_ERROR.getMessage());
             return "miaoshaFail";

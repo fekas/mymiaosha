@@ -147,3 +147,6 @@ GlobalException.java和GlobalExceptionHandler.java配合@RestControllerAdvice注
 ## 页面静态化
 
 前段不会变的页面静态化
+
+## 接口优化
+

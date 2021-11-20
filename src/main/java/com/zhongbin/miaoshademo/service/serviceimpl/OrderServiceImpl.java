@@ -1,6 +1,7 @@
 package com.zhongbin.miaoshademo.service.serviceimpl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.zhongbin.miaoshademo.exception.GlobalException;
 import com.zhongbin.miaoshademo.mapper.OrderMapper;
@@ -17,7 +18,9 @@ import com.zhongbin.miaoshademo.vo.OrderDetailVo;
 import com.zhongbin.miaoshademo.vo.RespBeanEnum;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Date;
 
@@ -41,13 +44,27 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
     private IMiaoshaOrderService miaoshaOrderService;
     @Autowired
     private IGoodsService goodsService;
+    @Autowired
+    private RedisTemplate redisTemplate;
 
     @Override
+    @Transactional
     public Order miaosha(User user, GoodsVo goodsVo) {
         MiaoshaGoods miaoshaGoods = miaoshaGoodsService.getOne(new QueryWrapper<MiaoshaGoods>().eq("goods_id", goodsVo.getId()));
         miaoshaGoods.setStockCount(miaoshaGoods.getStockCount() - 1);
-        miaoshaGoodsService.updateById(miaoshaGoods);
+       // miaoshaGoodsService.updateById(miaoshaGoods);
+ //       boolean miaoshaResult = miaoshaGoodsService.update(new UpdateWrapper<MiaoshaGoods>()
+   //     .set("stock_count", miaoshaGoods.getStockCount()).eq("id", miaoshaGoods.getId()).gt("stock_count", 0));
 
+        boolean result = miaoshaGoodsService.update(
+                new UpdateWrapper<MiaoshaGoods>()
+                        .setSql("stock_count = stock_count - 1")
+                        .eq("goods_id", goodsVo.getId())
+                        .gt("stock_count", 0)
+        );
+        if(!result){
+            return null;
+        }
         Order order = new Order();
         order.setUserId(user.getId());
         order.setGoodsId(goodsVo.getId());
@@ -67,6 +84,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         miaoshaOrder.setUserId(user.getId());
         miaoshaOrderService.save(miaoshaOrder);
 
+        redisTemplate.opsForValue().set("order:" + user.getId() + ":" + goodsVo.getId(), miaoshaOrder);
         return order;
     }
 
