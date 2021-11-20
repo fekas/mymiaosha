@@ -1,5 +1,7 @@
 package com.zhongbin.miaoshademo.utils;
 
+import lombok.extern.slf4j.Slf4j;
+
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -20,6 +22,7 @@ import java.net.URLEncoder;
  * -----------------------------------------------
  */
 
+@Slf4j
 public final class CookieUtil {
 
     /**
@@ -44,6 +47,7 @@ public final class CookieUtil {
     public static String getCookieValue(HttpServletRequest request, String cookieName, boolean isDecoder) {
         Cookie[] cookieList = request.getCookies();
         if (cookieList == null || cookieName == null) {
+            log.info("cookieList is null");
             return null;
         }
         String retValue = null;

@@ -1,6 +1,23 @@
 spring:
   profiles:
     active:
+
+  #静态资源处理，默认启用
+  resources:
+    cache:
+      cachecontrol:
+        #缓存的响应时间，单位s
+        max-age: 3600
+    chain:
+      #启用资源链缓存
+      cache: true
+      #启用资源链
+      enabled: true
+      #启用压缩资源（gzip等）
+      compressed: true
+      #开启h5应用缓存
+      html-application-cache: true
+    static-locations: classpath:/static/
   # thymelaef配置
   thymeleaf:
     cache: false

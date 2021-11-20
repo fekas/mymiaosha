@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.zhongbin.miaoshademo.pojo.Order;
 import com.zhongbin.miaoshademo.pojo.User;
 import com.zhongbin.miaoshademo.vo.GoodsVo;
+import com.zhongbin.miaoshademo.vo.OrderDetailVo;
 
 /**
  * <p>
@@ -16,4 +17,6 @@ import com.zhongbin.miaoshademo.vo.GoodsVo;
 public interface IOrderService extends IService<Order> {
 
     Order miaosha(User user, GoodsVo goodsVo);
+
+    OrderDetailVo detail(Long userId, Long orderId);
 }

@@ -118,3 +118,32 @@ GlobalException.java和GlobalExceptionHandler.java配合@RestControllerAdvice注
 5. 跨域
 
 6. jemter压测
+
+
+
+## 页面缓存
+
+1. ```java
+   			//引入redis
+   			@Autowired
+   			private RedisTemplate redisTemplate;
+   
+   			@RequestMapping(value = "toList", produces = "text/html;charset=utf-8")
+   			@ResponseBody
+   
+   
+           //尝试在redis中获取页面
+           ValueOperations valueOperations = redisTemplate.opsForValue();
+           String html = ((String) valueOperations.get("goodsList"));
+           if(!StringUtils.isEmpty(html)){
+               return html;
+           }
+   ```
+
+## 对象缓存
+
+
+
+## 页面静态化
+
+前段不会变的页面静态化

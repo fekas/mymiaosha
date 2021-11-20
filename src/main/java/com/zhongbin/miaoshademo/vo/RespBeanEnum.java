@@ -14,10 +14,18 @@ public enum RespBeanEnum {
     //登陆
     LOGIN_ERROR(500210, "用户名或密码错误"),
     MOBILE_ERROR(500211, "手机号码格式不正确"),
+    MOBILE_NOT_EXISTS(500213, "手机号码不存在"),
     BIND_ERROR(500212, "参数校验异常"),
+    SESSION_ERROR(500215, "用户未登陆或用户不存在"),
     //秒杀
     ENPTY_STOCK(500500, "库存不足"),
-    REPEATE_ERROR(500501, "重复抢购");
+    REPEATE_ERROR(500501, "重复抢购"),
+
+    ORDER_NOT_EXIST(500801, "订单不存在"),
+
+    FAILED_TO_UPDATE_PASWORD(500222, "修改密码失败");
+
+
     private final Integer code;
     private final String message;
 }

@@ -8,7 +8,6 @@ import com.zhongbin.miaoshademo.service.IUserService;
 import com.zhongbin.miaoshademo.utils.CookieUtil;
 import com.zhongbin.miaoshademo.utils.MD5Util;
 import com.zhongbin.miaoshademo.utils.UUIDUtil;
-import com.zhongbin.miaoshademo.utils.ValidatorUtil;
 import com.zhongbin.miaoshademo.vo.LoginVo;
 import com.zhongbin.miaoshademo.vo.RespBean;
 import com.zhongbin.miaoshademo.vo.RespBeanEnum;
@@ -58,7 +57,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
 //        request.getSession().setAttribute(ticket, user);
         CookieUtil.setCookie(request, response, "userTicket", ticket);
 
-        return RespBean.success();
+        return RespBean.success(ticket);
     }
 
     @Override
@@ -70,4 +69,23 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         }
         return user;
     }
+
+    @Override
+    public RespBean updatePassword(String userTicket, String password, HttpServletRequest request, HttpServletResponse response) {
+        User user = getUserByCookie(userTicket, request, response);
+
+        if( user == null){
+            throw new GlobalException(RespBeanEnum.MOBILE_NOT_EXISTS);
+        }
+        user.setPassword(MD5Util.inputPassToDBPass(password, user.getSalt()));
+        int i = userMapper.updateById(user);
+
+        //更新数据库就删除redis中的缓存
+        if(i == 1){
+            redisTemplate.delete("user:" + userTicket);
+            return RespBean.success();
+        }
+        return RespBean.error(RespBeanEnum.FAILED_TO_UPDATE_PASWORD);
+    }
+
 }

@@ -2,15 +2,20 @@ package com.zhongbin.miaoshademo.service.serviceimpl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.zhongbin.miaoshademo.exception.GlobalException;
 import com.zhongbin.miaoshademo.mapper.OrderMapper;
 import com.zhongbin.miaoshademo.pojo.MiaoshaGoods;
 import com.zhongbin.miaoshademo.pojo.MiaoshaOrder;
 import com.zhongbin.miaoshademo.pojo.Order;
 import com.zhongbin.miaoshademo.pojo.User;
+import com.zhongbin.miaoshademo.service.IGoodsService;
 import com.zhongbin.miaoshademo.service.IMiaoshaGoodsService;
 import com.zhongbin.miaoshademo.service.IMiaoshaOrderService;
 import com.zhongbin.miaoshademo.service.IOrderService;
 import com.zhongbin.miaoshademo.vo.GoodsVo;
+import com.zhongbin.miaoshademo.vo.OrderDetailVo;
+import com.zhongbin.miaoshademo.vo.RespBeanEnum;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -24,6 +29,7 @@ import java.util.Date;
  * @author dabin
  * @since 2021-11-13
  */
+@Slf4j
 @Service
 public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements IOrderService {
 
@@ -33,6 +39,8 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
     private OrderMapper orderMapper;
     @Autowired
     private IMiaoshaOrderService miaoshaOrderService;
+    @Autowired
+    private IGoodsService goodsService;
 
     @Override
     public Order miaosha(User user, GoodsVo goodsVo) {
@@ -60,5 +68,22 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         miaoshaOrderService.save(miaoshaOrder);
 
         return order;
+    }
+
+    @Override
+    public OrderDetailVo detail(Long userId, Long orderId) {
+        if(orderId == null){
+            throw new GlobalException(RespBeanEnum.ORDER_NOT_EXIST);
+        }
+        Order order = orderMapper.selectById(orderId);
+        if(!order.getUserId().equals(userId)){
+            log.info(order.getUserId() + "==" + userId);
+            throw new GlobalException(RespBeanEnum.ERROR);
+        }
+        GoodsVo goodsVo = goodsService.findGoodsVoByGoodsId(order.getGoodsId());
+
+        OrderDetailVo detail = new OrderDetailVo(order, goodsVo);
+
+        return detail;
     }
 }

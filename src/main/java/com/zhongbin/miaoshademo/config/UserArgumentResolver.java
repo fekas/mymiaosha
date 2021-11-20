@@ -3,6 +3,7 @@ package com.zhongbin.miaoshademo.config;
 import com.zhongbin.miaoshademo.pojo.User;
 import com.zhongbin.miaoshademo.service.IUserService;
 import com.zhongbin.miaoshademo.utils.CookieUtil;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.MethodParameter;
 import org.springframework.stereotype.Component;
@@ -16,6 +17,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 @Component
+@Slf4j
 public class UserArgumentResolver implements HandlerMethodArgumentResolver {
 
     @Autowired
@@ -33,6 +35,7 @@ public class UserArgumentResolver implements HandlerMethodArgumentResolver {
         HttpServletResponse response = nativeWebRequest.getNativeResponse(HttpServletResponse.class);
 
         String ticket = CookieUtil.getCookieValue(request, "userTicket");
+        log.info("userTicket: " + ticket);
         if(StringUtils.isEmpty(ticket))
             return null;
         return userService.getUserByCookie(ticket, request, response);
