@@ -19,6 +19,7 @@ import com.zhongbin.miaoshademo.vo.RespBeanEnum;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -50,6 +51,8 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
     @Override
     @Transactional
     public Order miaosha(User user, GoodsVo goodsVo) {
+        ValueOperations valueOperations = redisTemplate.opsForValue();
+
         MiaoshaGoods miaoshaGoods = miaoshaGoodsService.getOne(new QueryWrapper<MiaoshaGoods>().eq("goods_id", goodsVo.getId()));
         miaoshaGoods.setStockCount(miaoshaGoods.getStockCount() - 1);
        // miaoshaGoodsService.updateById(miaoshaGoods);
@@ -62,7 +65,9 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
                         .eq("goods_id", goodsVo.getId())
                         .gt("stock_count", 0)
         );
-        if(!result){
+        if(miaoshaGoods.getStockCount() < 1){
+            //判断是否有库存
+            valueOperations.set("isStockEmpty:" + goodsVo.getId(), "0");
             return null;
         }
         Order order = new Order();

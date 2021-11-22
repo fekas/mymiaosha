@@ -2,6 +2,7 @@ package com.zhongbin.miaoshademo.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.zhongbin.miaoshademo.pojo.MiaoshaOrder;
+import com.zhongbin.miaoshademo.pojo.User;
 
 /**
  * <p>
@@ -13,4 +14,5 @@ import com.zhongbin.miaoshademo.pojo.MiaoshaOrder;
  */
 public interface IMiaoshaOrderService extends IService<MiaoshaOrder> {
 
+    Long getResult(User user, Long goodsId);
 }

@@ -65,6 +65,38 @@ spring:
         #最小空闲连接时间，默认0
         min-idle: 5
 
+  rabbitmq:
+    host: 120.27.149.243
+    username: dabin
+    password: Zl.mtcldys606910
+    #虚拟主机
+    virtual-host: /
+    port: 5672
+    listener:
+      simple:
+        #消费者最小数量
+        concurrency: 10
+        #消费者最大数量
+        max-concurrency: 10
+        #限制消费者每次只能处理一条消息
+        prefetch: 1
+        #启动时是否默认启动容器
+        auto-startup: true
+        #当消息被拒绝时是否重新进入队列
+        default-requeue-rejected: true
+    template:
+      retry:
+        #发布重试，默认false
+        enabled: true
+        #重试时间
+        initial-interval: 1000ms
+        #重试的最大次数，默认3次
+        max-attempts: 3
+        #重试最大间隔时间，默认10000ms
+        max-interval: 10000ms
+        #重试间隔倍数
+        multiplier: 1
+
 
 #mybatis-plus 配置
 mybatis-plus:
@@ -77,3 +109,5 @@ mybatis-plus:
 logging:
   level:
     com.zhongbin.miaoshademo.mapper: debug
+server:
+  port: 8899

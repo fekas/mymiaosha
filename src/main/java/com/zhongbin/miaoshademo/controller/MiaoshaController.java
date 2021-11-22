@@ -1,26 +1,36 @@
 package com.zhongbin.miaoshademo.controller;
 
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.alibaba.fastjson.JSON;
+import com.zhongbin.miaoshademo.pojo.MiaoshaMessage;
 import com.zhongbin.miaoshademo.pojo.MiaoshaOrder;
 import com.zhongbin.miaoshademo.pojo.Order;
 import com.zhongbin.miaoshademo.pojo.User;
+import com.zhongbin.miaoshademo.rabbitmq.MQSender;
 import com.zhongbin.miaoshademo.service.IGoodsService;
 import com.zhongbin.miaoshademo.service.IMiaoshaOrderService;
 import com.zhongbin.miaoshademo.service.IOrderService;
 import com.zhongbin.miaoshademo.vo.GoodsVo;
 import com.zhongbin.miaoshademo.vo.RespBean;
 import com.zhongbin.miaoshademo.vo.RespBeanEnum;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.util.CollectionUtils;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 @Controller
 @RequestMapping("miaosha")
-public class MiaoshaController {
+public class MiaoshaController implements InitializingBean {
 
     @Autowired
     private IGoodsService goodsService;
@@ -30,6 +40,10 @@ public class MiaoshaController {
     private IOrderService orderService;
     @Autowired
     private RedisTemplate redisTemplate;
+    @Autowired
+    private MQSender mqSender;
+
+    private Map<Long, Boolean> emptyStockMap = new HashMap<>();
 
     /**
      * mac优化前QPS：109
@@ -68,18 +82,68 @@ public class MiaoshaController {
     @ResponseBody
     public RespBean doMiaosha(Model model, User user, Long goodsId){
         if(user == null)return RespBean.error(RespBeanEnum.SESSION_ERROR);
-        GoodsVo goodsVo = goodsService.findGoodsVoByGoodsId(goodsId);
+//        GoodsVo goodsVo = goodsService.findGoodsVoByGoodsId(goodsId);
+//
+//        if(goodsVo.getStockCount() < 1){
+//            model.addAttribute("errmsg", RespBeanEnum.ENPTY_STOCK.getMessage());
+//            return RespBean.error(RespBeanEnum.ENPTY_STOCK);
+//        }
+//        MiaoshaOrder miaoshaOrder = miaoshaOrderService.getOne(new QueryWrapper<MiaoshaOrder>().eq("user_id", user.getId()).eq("goods_id", goodsId));
+//        if(miaoshaOrder != null){
+//            model.addAttribute("errmsg", RespBeanEnum.REPEATE_ERROR.getMessage());
+//            return RespBean.error(RespBeanEnum.REPEATE_ERROR);
+//        }
+//        Order order = orderService.miaosha(user, goodsVo);
+//        return RespBean.success(order);
 
-        if(goodsVo.getStockCount() < 1){
-            model.addAttribute("errmsg", RespBeanEnum.ENPTY_STOCK.getMessage());
-            return RespBean.error(RespBeanEnum.ENPTY_STOCK);
-        }
-        MiaoshaOrder miaoshaOrder = miaoshaOrderService.getOne(new QueryWrapper<MiaoshaOrder>().eq("user_id", user.getId()).eq("goods_id", goodsId));
+        //通过redis预减库存来优化上面的代码
+
+        ValueOperations valueOperations = redisTemplate.opsForValue();
+        //判断是否重复抢购
+        //MiaoshaOrder miaoshaOrder = miaoshaOrderService.getOne(new QueryWrapper<MiaoshaOrder>().eq("user_id", user.getId()).eq("goods_id", goodsId));
+        MiaoshaOrder miaoshaOrder = ((MiaoshaOrder) redisTemplate.opsForValue().get("order:" + user.getId() + ":" + goodsId));
         if(miaoshaOrder != null){
-            model.addAttribute("errmsg", RespBeanEnum.REPEATE_ERROR.getMessage());
             return RespBean.error(RespBeanEnum.REPEATE_ERROR);
         }
-        Order order = orderService.miaosha(user, goodsVo);
-        return RespBean.success(order);
+        //通过内存标记减少redis的访问
+        if (emptyStockMap.get(goodsId)){
+            return RespBean.error(RespBeanEnum.ENPTY_STOCK);
+        }
+        //预减库存
+        Long stock = valueOperations.decrement("miaoshaGoods:" + goodsId);
+        if(stock < 0){
+            emptyStockMap.put(goodsId, true);
+            valueOperations.increment("miaoshaGoods:" + goodsId);
+            return RespBean.error(RespBeanEnum.ENPTY_STOCK);
+        }
+        MiaoshaMessage miaoshaMessage = new MiaoshaMessage(user, goodsId);
+        mqSender.sendMiaoshaMessage(JSON.toJSONString(miaoshaMessage));
+//        Order order = orderService.miaosha(user, goodsVo);
+        return RespBean.success(0);
+    }
+
+    @GetMapping("/result")
+    @ResponseBody
+    public RespBean getResult(User user, Long goodsId){
+        if(user == null)return RespBean.error(RespBeanEnum.SESSION_ERROR);
+        Long orderId = miaoshaOrderService.getResult(user, goodsId);
+        return RespBean.success(orderId);
+    }
+
+    /**
+     * 系统初始化时把商品加入到redis
+     * @throws Exception
+     */
+    @Override
+    public void afterPropertiesSet() throws Exception {
+        List<GoodsVo> goodsVoList = goodsService.findGoodsVo();
+        if(CollectionUtils.isEmpty(goodsVoList)){
+            return;
+        }
+        goodsVoList.forEach(goodsVo -> {
+                    redisTemplate.opsForValue().set("miaoshaGoods:" + goodsVo.getId(), goodsVo.getStockCount());
+                    emptyStockMap.put(goodsVo.getId(), false);
+                }
+            );
     }
 }

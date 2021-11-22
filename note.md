@@ -125,13 +125,13 @@ GlobalException.java和GlobalExceptionHandler.java配合@RestControllerAdvice注
 
 1. ```java
    			//引入redis
-   			@Autowired
-   			private RedisTemplate redisTemplate;
-   
-   			@RequestMapping(value = "toList", produces = "text/html;charset=utf-8")
-   			@ResponseBody
-   
-   
+      			@Autowired
+      			private RedisTemplate redisTemplate;
+      
+      			@RequestMapping(value = "toList", produces = "text/html;charset=utf-8")
+      			@ResponseBody
+
+
            //尝试在redis中获取页面
            ValueOperations valueOperations = redisTemplate.opsForValue();
            String html = ((String) valueOperations.get("goodsList"));
@@ -150,3 +150,10 @@ GlobalException.java和GlobalExceptionHandler.java配合@RestControllerAdvice注
 
 ## 接口优化
 
+
+   ```
+
+## redis预减库存
+
+1. controll实现InitializingBean接口，在初始化方法中将库存加入redis
+2. 在miaosha方法中进行redis减库存
