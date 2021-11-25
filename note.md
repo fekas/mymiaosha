@@ -157,3 +157,11 @@ GlobalException.java和GlobalExceptionHandler.java配合@RestControllerAdvice注
 
 1. controll实现InitializingBean接口，在初始化方法中将库存加入redis
 2. 在miaosha方法中进行redis减库存
+
+
+
+## 安全优化
+
+1. 隐藏秒杀接口地址
+2. 验证码
+3. 接口限流

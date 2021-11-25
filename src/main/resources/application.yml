@@ -1,6 +1,6 @@
 spring:
   profiles:
-    active:
+    active: uat
 
   #静态资源处理，默认启用
   resources:

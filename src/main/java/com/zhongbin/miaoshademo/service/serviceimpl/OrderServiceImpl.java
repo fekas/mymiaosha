@@ -100,7 +100,6 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         }
         Order order = orderMapper.selectById(orderId);
         if(!order.getUserId().equals(userId)){
-            log.info(order.getUserId() + "==" + userId);
             throw new GlobalException(RespBeanEnum.ERROR);
         }
         GoodsVo goodsVo = goodsService.findGoodsVoByGoodsId(order.getGoodsId());

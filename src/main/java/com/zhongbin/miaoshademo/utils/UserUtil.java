@@ -42,7 +42,7 @@ public class UserUtil {
 //        conn.close();
 //        System.out.println("insert to db");
         //登陆获取令牌
-        String loginUrl = "http://localhost:8080/login/doLogin";
+        String loginUrl = "http://localhost:8899/login/doLogin";
         File file = new File("/Users/zhongbin/Documents/Code/Test/Jmeter/config.txt");
         if (file.exists()){
             file.delete();

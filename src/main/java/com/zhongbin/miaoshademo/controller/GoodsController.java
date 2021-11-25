@@ -145,7 +145,6 @@ public class GoodsController {
         detailVo.setMiaoshaStatus(miaoshaStatus);
         detailVo.setRemainSeconds(remainSeconds);
 
-        log.info(detailVo.toString());
         return RespBean.success(detailVo);
     }
 }
