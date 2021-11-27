@@ -20,8 +20,12 @@ public enum RespBeanEnum {
     //秒杀
     ENPTY_STOCK(500500, "库存不足"),
     REPEATE_ERROR(500501, "重复抢购"),
+    REQUEST_ILLEGAL(500502, "请求非法"),
+    ACCESS_LIMITED_REACHED(500503, "访问过于频繁"),
 
     ORDER_NOT_EXIST(500801, "订单不存在"),
+
+    ERROR_CAPTCHA(500888, "验证码错误，请重新输入"),
 
     FAILED_TO_UPDATE_PASWORD(500222, "修改密码失败");
 

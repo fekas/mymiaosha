@@ -163,5 +163,15 @@ GlobalException.java和GlobalExceptionHandler.java配合@RestControllerAdvice注
 ## 安全优化
 
 1. 隐藏秒杀接口地址
+
+   生成UUID存储在redis中
+
 2. 验证码
+
 3. 接口限流
+
+   计数器算法：设置redis失效时间
+
+   漏桶算法：队列
+
+   令牌桶算法：

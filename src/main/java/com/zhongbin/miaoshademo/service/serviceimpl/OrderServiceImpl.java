@@ -13,6 +13,8 @@ import com.zhongbin.miaoshademo.service.IGoodsService;
 import com.zhongbin.miaoshademo.service.IMiaoshaGoodsService;
 import com.zhongbin.miaoshademo.service.IMiaoshaOrderService;
 import com.zhongbin.miaoshademo.service.IOrderService;
+import com.zhongbin.miaoshademo.utils.MD5Util;
+import com.zhongbin.miaoshademo.utils.UUIDUtil;
 import com.zhongbin.miaoshademo.vo.GoodsVo;
 import com.zhongbin.miaoshademo.vo.OrderDetailVo;
 import com.zhongbin.miaoshademo.vo.RespBeanEnum;
@@ -22,8 +24,10 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.util.Date;
+import java.util.concurrent.TimeUnit;
 
 /**
  * <p>
@@ -107,5 +111,31 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         OrderDetailVo detail = new OrderDetailVo(order, goodsVo);
 
         return detail;
+    }
+
+    @Override
+    public String createPath(User user, Long goodsId) {
+        String str = MD5Util.md5(UUIDUtil.uuid() + "123456");
+
+        ValueOperations valueOperations = redisTemplate.opsForValue();
+        valueOperations.set("miaoshaPath:" + user.getId() + ":" + goodsId, str, 60, TimeUnit.SECONDS);
+        return str;
+    }
+
+    @Override
+    public boolean checkPath(User user, Long goodsId, String path) {
+        if(user == null || goodsId < 0 || StringUtils.isEmpty(path))return false;
+        String redisPath = ((String) redisTemplate.opsForValue().get("miaoshaPath:" + user.getId() + ":" + goodsId));
+        log.info(redisPath + "==" + path);
+        return path.equals(redisPath);
+    }
+
+    @Override
+    public boolean checkCaptcha(User user, Long goodsId, String captcha) {
+        if(user == null|| goodsId < 0 || StringUtils.isEmpty(captcha)){
+            return false;
+        }
+        String redisCaptcha = ((String) redisTemplate.opsForValue().get("captcha:" + user.getId() + ":" + goodsId));
+        return captcha.equals(redisCaptcha);
     }
 }

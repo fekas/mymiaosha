@@ -1,6 +1,9 @@
 package com.zhongbin.miaoshademo.controller;
 
 import com.alibaba.fastjson.JSON;
+import com.wf.captcha.ArithmeticCaptcha;
+import com.zhongbin.miaoshademo.annotations.AccessLimited;
+import com.zhongbin.miaoshademo.exception.GlobalException;
 import com.zhongbin.miaoshademo.pojo.MiaoshaMessage;
 import com.zhongbin.miaoshademo.pojo.MiaoshaOrder;
 import com.zhongbin.miaoshademo.pojo.Order;
@@ -12,6 +15,7 @@ import com.zhongbin.miaoshademo.service.IOrderService;
 import com.zhongbin.miaoshademo.vo.GoodsVo;
 import com.zhongbin.miaoshademo.vo.RespBean;
 import com.zhongbin.miaoshademo.vo.RespBeanEnum;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -20,13 +24,16 @@ import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.util.CollectionUtils;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.*;
 
-import java.util.*;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
+@Slf4j
 @Controller
 @RequestMapping("miaosha")
 public class MiaoshaController implements InitializingBean {
@@ -79,9 +86,9 @@ public class MiaoshaController implements InitializingBean {
         return "orderDetail";
     }
 
-    @PostMapping("domiaosha")
+    @PostMapping("/{path}/domiaosha")
     @ResponseBody
-    public RespBean doMiaosha(Model model, User user, Long goodsId){
+    public RespBean doMiaosha(User user, Long goodsId, @PathVariable String path){
         if(user == null)return RespBean.error(RespBeanEnum.SESSION_ERROR);
 //        GoodsVo goodsVo = goodsService.findGoodsVoByGoodsId(goodsId);
 //
@@ -100,6 +107,12 @@ public class MiaoshaController implements InitializingBean {
         //通过redis预减库存来优化上面的代码
 
         ValueOperations valueOperations = redisTemplate.opsForValue();
+
+        boolean check = orderService.checkPath(user, goodsId, path);
+
+        if (!check){
+            return RespBean.error(RespBeanEnum.REQUEST_ILLEGAL);
+        }
         //判断是否重复抢购
         //MiaoshaOrder miaoshaOrder = miaoshaOrderService.getOne(new QueryWrapper<MiaoshaOrder>().eq("user_id", user.getId()).eq("goods_id", goodsId));
         MiaoshaOrder miaoshaOrder = ((MiaoshaOrder) redisTemplate.opsForValue().get("order:" + user.getId() + ":" + goodsId));
@@ -130,6 +143,41 @@ public class MiaoshaController implements InitializingBean {
         if(user == null)return RespBean.error(RespBeanEnum.SESSION_ERROR);
         Long orderId = miaoshaOrderService.getResult(user, goodsId);
         return RespBean.success(orderId);
+    }
+
+    @AccessLimited(second = 5, maxCnt = 5, needLogin = true)
+    @GetMapping("path")
+    @ResponseBody
+    public RespBean getPath(User user, Long goodsId, String captcha){
+        if(user == null){
+            return RespBean.error(RespBeanEnum.SESSION_ERROR);
+        }
+
+        boolean check = orderService.checkCaptcha(user, goodsId, captcha);
+        if(!check){
+            return RespBean.error(RespBeanEnum.ERROR_CAPTCHA);
+        }
+        String str = orderService.createPath(user, goodsId);
+        return RespBean.success(str);
+    }
+
+    @GetMapping("captcha")
+    public void verifyCaptcha(User user, Long goodsId, HttpServletResponse response){
+        if(null == user || goodsId < 0){
+            throw new GlobalException(RespBeanEnum.REQUEST_ILLEGAL);
+        }
+        response.setContentType("image/jpg");
+        response.setHeader("Pargam", "No-cache");
+        response.setHeader("Cache-Control", "no-cache");
+        response.setDateHeader("Exipres", 0);
+        //生成验证码，将结果放在Redis中
+        ArithmeticCaptcha captcha = new ArithmeticCaptcha(130, 32, 3);
+        redisTemplate.opsForValue().set("captcha:" + user.getId() + ":" + goodsId, captcha.text(), 300, TimeUnit.SECONDS);
+        try {
+            captcha.out(response.getOutputStream());
+        } catch (IOException e) {
+            log.error("验证码生成失败", e.getMessage());
+        }
     }
 
     /**
